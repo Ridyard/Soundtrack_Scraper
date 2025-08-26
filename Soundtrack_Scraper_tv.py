@@ -21,10 +21,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import pandas as pd
 from pathlib import Path
 
-def handleCookies():
+def handleCookies(browser, selectors):
     # Called when navigating to new browser instance or web page; clear the "cookies" pop-up
     # Wait for the cookies "AGREE" button to be present and clickable
     agree_button_xpath = selectors["cookies_agree_button"]
@@ -36,26 +37,29 @@ def handleCookies():
         print("No cookies popup found.")
 
 
-def findGivenElements(xpath_in):
+def findGivenElements(browser, xpath_in):
     # accepts an xpath argument & returns a list of corresponding elements 
     WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH, xpath_in)))
     return browser.find_elements(By.XPATH, xpath_in)
 
 
-def showAllClick(parent_div_in):
+def showAllClick(browser, selectors, parent_div_in):
     # each episode-page will show an abridged list of tracks; if there is a "show all" button, this function will click & expand the track listing
     try:
-        # showAllButt_xpath = '//p[@class="sc-jEACwC jpIqjk sc-hmdomO YqQqi"]'
         showAllButt_xpath = selectors["show_all_button"]
-        showAllButt = parent_div_in.find_element(By.XPATH, showAllButt_xpath)
-        browser.execute_script("arguments[0].scrollIntoView(true);", showAllButt)
-        browser.execute_script("arguments[0].click();", showAllButt)
-        # print("'show all' button clicked")
+        showAllButtons = parent_div_in.find_elements(By.XPATH, showAllButt_xpath)
+        if showAllButtons:
+            showAllButt = showAllButtons[0]
+            browser.execute_script("arguments[0].scrollIntoView(true);", showAllButt)
+            browser.execute_script("arguments[0].click();", showAllButt)
+        else:
+            print("No 'Show All' button present — skipping expansion.")
     except Exception as e:
-        print(f"No 'Show All' button found or issue with clicking: {str(e)}") #
+        print(f"Issue with clicking 'Show All': {str(e)}")
+
 
 # occasionally the website will throw a "please log in" page; this function handles such events
-def isLoginModalPresent():
+def isLoginModalPresent(browser, selectors):
     try:
         modal_xpath = selectors["login_modal"]
         WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.XPATH, modal_xpath)))
@@ -94,13 +98,13 @@ def scrape_soundtrack_tv(tv_show, season_num):
     # set browser object & open url
     browser = webdriver.Firefox(options = options) # Use options when initializing the WebDriver
     browser.get(builtUrl)
-    handleCookies()
+    handleCookies(browser, selectors)
 
     ###################################################
 
     # xpath of the show's seasons
     season_element_xpath = selectors["season_links"]
-    season_elements = findGivenElements(season_element_xpath)
+    season_elements = findGivenElements(browser, season_element_xpath)
     # for season in season_elements:
     #     print(season.text.strip())
     # print(input("here"))
@@ -121,9 +125,9 @@ def scrape_soundtrack_tv(tv_show, season_num):
 
     # xpath of "episode" elements within each season
     episode_element_xpath = selectors["episode_cards"]
-    episode_elements = findGivenElements(episode_element_xpath)
+    episode_elements = findGivenElements(browser, episode_element_xpath)
 
-    ## debugging block
+    # # debugging block
     # for i, ep in enumerate(episode_elements):
     #     try:
     #         title = ep.find_element(By.XPATH, './/h4').text.strip()
@@ -137,10 +141,23 @@ def scrape_soundtrack_tv(tv_show, season_num):
     for j in range(len(episode_elements)):
 
         # Re-fetch the elements after each navigation to avoid stale element exception
-        episode_elements = findGivenElements(episode_element_xpath)
+        episode_elements = findGivenElements(browser, episode_element_xpath)
         episode = episode_elements[j]
-        
-        print(f"Navigating to episode: {j+1}")
+
+        # Capture episode metadata BEFORE clicking
+        try:
+            episode_title = episode.find_element(By.XPATH, './/h4').text.strip()
+            episode_date = episode.find_element(By.XPATH, './/p[not(contains(text(), "Tracks")) and not(contains(text(), "Questions"))]').text.strip()
+        except Exception as e:
+            episode_title = f"Episode {j+1}"
+            episode_date = "Unknown"
+            print(f"[{j+1}] Issue extracting episode info: {e}")
+
+
+        ###########################################################################    
+
+
+        print(f"Navigating to episode: {episode_title} ({episode_date})")
         
         # Try to click the episode link
         try:
@@ -150,7 +167,7 @@ def scrape_soundtrack_tv(tv_show, season_num):
             WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
             # Check for login modal
-            if isLoginModalPresent():
+            if isLoginModalPresent(browser, selectors):
                 print("Login modal detected — skipping episode.") # TODO check this; we don't want to skip 
                 browser.back()
                 continue
@@ -158,14 +175,21 @@ def scrape_soundtrack_tv(tv_show, season_num):
             # pull song / artist elements from within a specific div element
             # avoids pulling additional / not required tracks that are duplicated around the page
             div_xpath = selectors["episode_div"]
-            WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH, div_xpath))) # Wait for the div to be present in the DOM
-            
+            try:
+                WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH, div_xpath)))
+            except TimeoutException:
+                print(f"{episode_title}: Episode div not found — skipping.")
+                browser.back()
+                continue
+
+
+
             # Locate the parent div element
             parent_div = browser.find_element(By.XPATH, div_xpath)
 
             # the "show all tracks" button is located within the parent_div, hence why we pass the parent_div as an argument
             # this function call is inconsistent when we don't use the parent_div, ie we just search for the "show all tracks" button xpath
-            showAllClick(parent_div)  # Click "Show All" if present
+            showAllClick(browser, selectors, parent_div)  # Click "Show All" if present
 
             # once inside the episode page, scrape the tracks
             # Now find a specific song(p) & artist elements within the parent div
@@ -189,7 +213,8 @@ def scrape_soundtrack_tv(tv_show, season_num):
             browser.back()
 
         except Exception as e:
-            print(f"Could not navigate to episode: {episode.text}, error: {str(e)}")
+            print(f"{episode_title}: Could not navigate or scrape — error: {str(e)}")
+
 
 
     # placeholder for the csv filename, in a standardissed format
@@ -224,8 +249,10 @@ def scrape_soundtrack_tv(tv_show, season_num):
     print(f"playlist length: {len(playlist)}")
     print()
 
+    return playlist
 
 
+scrape_soundtrack_tv("the bear", 1)
 
     
 
