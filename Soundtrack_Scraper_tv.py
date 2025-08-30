@@ -4,16 +4,16 @@
 # Tracks are pulled from each episode, ordered by season
 # A Ridyard // 09.2024 // initial build
 #           // 08.2025 // updated xpaths; all previous xpaths were deprecated
-#                         updated method for scraping song/artists
-#                         updated the method for handling multiple contributing artists on a single song
+#                      // updated method for scraping song/artists
+#                      // updated the method for handling multiple contributing artists on a single song
+#                      // added conditional block for native script testing
+#
 
 
 # TODO
-# Add spotify playlist integration
 # check if opening credits song is in playlist - and if not - add it
 # Add film functionality - 
 # film url is "https://www.tunefind.com/movie/deadpool-wolverine-2024"
-# could use the imdb api to get the film year when constructing the url?
 
 
 from selenium import webdriver
@@ -252,7 +252,12 @@ def scrape_soundtrack_tv(tv_show, season_num):
     return playlist
 
 
-scrape_soundtrack_tv("the bear", 1)
+# tester function call - test any amendments to Soundtrack_Scraper_tv.py
+# this will only run if this script is executed natively (ie not when imported into soundtrack_main.py)
+if __name__ == "__main__":
+    tv_show = input("Enter a tv_show: ")
+    season_num = input("Enter a season number: ")
+    scrape_soundtrack_tv(tv_show, season_num)
 
     
 
