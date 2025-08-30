@@ -52,8 +52,9 @@ def showAllClick(browser, selectors, parent_div_in):
             showAllButt = showAllButtons[0]
             browser.execute_script("arguments[0].scrollIntoView(true);", showAllButt)
             browser.execute_script("arguments[0].click();", showAllButt)
-        else:
-            print("No 'Show All' button present — skipping expansion.")
+        # debugging line
+        # else:
+        #     print("No 'Show All' button present — skipping expansion.")
     except Exception as e:
         print(f"Issue with clicking 'Show All': {str(e)}")
 
@@ -71,6 +72,7 @@ def isLoginModalPresent(browser, selectors):
 # the main scraping function; this function will call other functions in this script
 def scrape_soundtrack_tv(tv_show, season_num):
 
+    season_num = int(season_num)
     playlist = {}  # dict to hold each artist:song kv pair
     selectors = { # dict to hold the xpath strings 
         "cookies_agree_button": '//button[span[text()="AGREE"]]',
@@ -91,8 +93,9 @@ def scrape_soundtrack_tv(tv_show, season_num):
 
     # build the url from which we will scrape the soundtrack list
     baseURL = 'https://www.tunefind.com/show/'
-    tvShow = input('Please enter a TV Show to search...').split()
-    tvShowClean = '-'.join(tvShow)  # replace whitespaces with '-' in url
+    #tv_show = input('Please enter a TV Show to search...').split()
+    tv_show = tv_show.split()
+    tvShowClean = '-'.join(tv_show)  # replace whitespaces with '-' in url
     builtUrl = baseURL + tvShowClean
 
     # set browser object & open url
@@ -109,12 +112,20 @@ def scrape_soundtrack_tv(tv_show, season_num):
     #     print(season.text.strip())
     # print(input("here"))
 
-    # choose the season to pull track listing from
-    if len(season_elements) > 1:
-        currChoice = int(input(f'Scrape the soundtrack for which season?\n1-{str(len(season_elements))} \n'))
+    # amended the way we collect season_num (passed in as an function argument)
+    # # choose the season to pull track listing from
+    # if len(season_elements) > 1:
+    #     currChoice = int(input(f'Scrape the soundtrack for which season?\n1-{str(len(season_elements))} \n'))
+    # else:
+    #     print(f'scraping soundtrack for {" ".join(tv_show)} season 1')
+    #     currChoice = 1
+
+    if season_num <1 or  season_num > len(season_elements):
+        browser.quit()
+        raise ValueError(f"Season {season_num} is out of range. Available: 1-{len(season_elements)}")
+
     else:
-        print(f'scraping soundtrack for {" ".join(tvShow)} season 1')
-        currChoice = 1
+        currChoice = season_num
 
 
     # Click into the corresponding season link
@@ -249,13 +260,14 @@ def scrape_soundtrack_tv(tv_show, season_num):
     print(f"playlist length: {len(playlist)}")
     print()
 
-    return playlist
+    # return playlist
+    return playlist, output_filename, f"Season_{currChoice}"
 
 
 # tester function call - test any amendments to Soundtrack_Scraper_tv.py
 # this will only run if this script is executed natively (ie not when imported into soundtrack_main.py)
 if __name__ == "__main__":
-    tv_show = input("Enter a tv_show: ")
+    tv_show = input("Enter a tv show: ")
     season_num = input("Enter a season number: ")
     scrape_soundtrack_tv(tv_show, season_num)
 
