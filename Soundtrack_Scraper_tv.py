@@ -261,7 +261,7 @@ def scrape_soundtrack_tv(tv_show, season_num):
     print()
 
     # return playlist
-    return playlist, output_filename, f"Season_{currChoice}"
+    return playlist
 
 
 # tester function call - test any amendments to Soundtrack_Scraper_tv.py
