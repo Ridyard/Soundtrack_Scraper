@@ -157,7 +157,8 @@
     <h1>🎵 Build Your Playlist</h1>
     {% if success == "true" %}
     <div id="toast" class="toast">
-    ✅ Playlist created successfully!
+      ✅ Playlist created successfully!
+      <span style="margin-left: 1rem; cursor: pointer;" onclick="this.parentElement.style.display='none'">✖</span>
     </div>
     {% endif %}
     <form method="POST">
@@ -173,10 +174,6 @@
       <div class="loader"></div>
       <p>Compiling Soundtrack... Please Wait</p>
     </div>
-  </div>
-  <div id="toast" class="toast">
-    ✅ Playlist created successfully!
-    <span style="margin-left: 1rem; cursor: pointer;" onclick="this.parentElement.style.display='none'">✖</span>
   </div>
   
   <script>

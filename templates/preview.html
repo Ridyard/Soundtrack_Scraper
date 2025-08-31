@@ -69,7 +69,7 @@
       background-color: #019875;
     }
 
-    @keyframes fadeIn {
+    @keyframes fadeInSimple {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
@@ -78,7 +78,7 @@
       text-align: center;
       margin-top: 1.5rem;
       opacity: 0;
-      animation: fadeIn 0.5s ease-in forwards;
+      animation: fadeInSimple 0.5s ease-in forwards;
     }
 
     @keyframes fadeIn {
@@ -109,6 +109,10 @@
       padding-right: 0.5rem;
     }
 
+    .playlist-scroll::-webkit-scrollbar {
+      width: 10px;
+    }
+
     .playlist-scroll::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.1);
       border-radius: 8px;
@@ -120,6 +124,23 @@
       border: 2px solid rgba(0, 0, 0, 0.2);
     }
 
+    .track-count {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #00b894;
+      text-align: center;
+    }
+
+    .cancel-link {
+      color: #ccc;
+      text-decoration: underline;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .cancel-link:hover {
+      color: #fff;
+    }
 
   </style>
 </head>
@@ -140,6 +161,9 @@
     <form method="POST" action="/confirm">
       <button type="submit">Create Playlist</button>
     </form>
+    <div style="text-align: center; margin-top: 1rem;">
+      <a href="/" <a href="/" class="cancel-link">Cancel</a>
+    </div>
     <div id="spinner" class="spinner" style="display: none;">
       <div class="loader"></div>
       <p>Creating playlist... please wait</p>
