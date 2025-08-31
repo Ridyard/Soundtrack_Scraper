@@ -149,18 +149,32 @@
       transform: scale(1.02);
     }
 
+    #current-episode {
+      font-size: 1rem;
+      color: #00b894;
+      text-align: center;
+      animation: fadeInEpisode 0.5s ease-in-out;
+    }
+
+    @keyframes fadeInEpisode {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
 
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🎵 Build Your Playlist</h1>
+
     {% if success == "true" %}
     <div id="toast" class="toast">
       ✅ Playlist created successfully!
       <span style="margin-left: 1rem; cursor: pointer;" onclick="this.parentElement.style.display='none'">✖</span>
     </div>
     {% endif %}
+
     <form method="POST">
       <label for="tv_show">TV Show</label>
       <input type="text" name="tv_show" id="tv_show" placeholder="Game of Thrones" required />
@@ -170,23 +184,43 @@
 
       <button type="submit">Create Playlist</button>
     </form>
+
     <div id="spinner" class="spinner" style="display: none;">
       <div class="loader"></div>
       <p>Compiling Soundtrack... Please Wait</p>
+      <p id="current-episode" style="font-weight: 600; margin-top: 1rem;">Episode: Loading...</p>
     </div>
   </div>
-  
+
+  <!-- Toast auto-hide -->
   <script>
     setTimeout(() => {
       const toast = document.getElementById("toast");
       if (toast) toast.style.display = "none";
     }, 4000);
   </script>
+
+  <!-- Spinner + Episode Rolladex -->
   <script>
     const form = document.querySelector("form");
+    const spinner = document.getElementById("spinner");
+    const episodeDisplay = document.getElementById("current-episode");
+  
+    function pollEpisode() {
+      fetch("/current-episode")
+        .then(res => res.json())
+        .then(data => {
+          episodeDisplay.textContent = `Episode: ${data.episode}`;
+        })
+        .catch(() => {
+          episodeDisplay.textContent = "Episode: Loading...";
+        });
+    }
+  
     form.addEventListener("submit", () => {
-      document.querySelector("form").style.display = "none";
-      document.getElementById("spinner").style.display = "block";
+      form.style.display = "none";
+      spinner.style.display = "block";
+      setInterval(pollEpisode, 1500); // poll every 1.5s
     });
   </script>
 </body>

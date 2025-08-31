@@ -20,18 +20,24 @@ def index():
         playlist_cache["tv_show"] = tv_show
         playlist_cache["season_num"] = season_num
         return render_template("preview.html", playlist=playlist, tv_show=tv_show, season_num=season_num)
-    # return render_template("index.html", success=success)
     return render_template("index.html", success=success, track_count=track_count)
 
 
-
+@app.route("/current-episode")
+def current_episode():
+    try:
+        with open("current_episode.txt", "r", encoding="utf-8") as f:
+            title = f.read().strip()
+        return {"episode": title}
+    except FileNotFoundError:
+        return {"episode": "Loading..."}
+    
 
 @app.route("/confirm", methods=["POST"])
 def confirm():
     tv_show = playlist_cache.get("tv_show")
     season_num = playlist_cache.get("season_num")
     run_soundtrack_builder(tv_show, season_num)
-    # return redirect(url_for("index", success="true"))
     return redirect(url_for("index", success="true", tracks=len(playlist_cache["data"])))
 
 

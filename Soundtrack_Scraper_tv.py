@@ -171,6 +171,9 @@ def scrape_soundtrack_tv(tv_show, season_num):
 
 
         print(f"Navigating to episode: {episode_title} ({episode_date})")
+
+        with open("current_episode.txt", "w", encoding="utf-8") as f:
+            f.write(episode_title)
         
         # Try to click the episode link
         try:
