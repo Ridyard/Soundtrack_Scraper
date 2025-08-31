@@ -24,12 +24,14 @@ import pandas as pd
 from collections import OrderedDict
 from datetime import datetime
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 
 def run_soundtrack_builder(tv_show, season_num, csv_dir="Playlist CSV Files", log_missing=True):
     sp = get_spotify_client()
     create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
+
 
 
 def get_spotify_client():
@@ -55,8 +57,15 @@ def create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir="Playlist 
     Creates a Spotify playlist from a CSV of Song/Artist pairs.
     Deduplicates tracks, preserves order, and logs missing entries.
     """
-
+    
+    tv_show = '_'.join(word.capitalize() for word in tv_show.split())
     csv_path = f"{csv_dir}/{tv_show}_Season_{season_num}_Playlist.csv"
+    
+    # check that the playlist exists
+    if not Path(csv_path).exists():
+        print(f"❌ CSV not found: {csv_path}")
+        return
+
     df = pd.read_csv(csv_path)
 
     track_uris = []
@@ -101,7 +110,8 @@ def create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir="Playlist 
 # this code only runs when executed directly; it won't trigger when this file is imported elsewhere
 # this call requires there to be a "tv_show_Season_1_Playlist.txt" file in the "Playlist CSV Files" sub-directory
 if __name__ == "__main__":
-    tv_show = '_'.join(word.capitalize() for word in input("Enter a TV show to test script: ").split())
+    # tv_show = '_'.join(word.capitalize() for word in input("Enter a TV show to test script: ").split())
+    tv_show = input("enter a tv show to test script: ")
     season_num = input("enter season num: ")
     sp = get_spotify_client()
     create_spotify_playlist_from_csv(sp, tv_show, season_num)

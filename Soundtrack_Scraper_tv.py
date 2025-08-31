@@ -7,13 +7,12 @@
 #                      // updated method for scraping song/artists
 #                      // updated the method for handling multiple contributing artists on a single song
 #                      // added conditional block for native script testing
-#
+#                      // updated episode_elements section; handles stale DOM / episode element references
 
 
 # TODO
 # check if opening credits song is in playlist - and if not - add it
 # Add film functionality - 
-# film url is "https://www.tunefind.com/movie/deadpool-wolverine-2024"
 
 
 from selenium import webdriver
@@ -138,22 +137,25 @@ def scrape_soundtrack_tv(tv_show, season_num):
     episode_element_xpath = selectors["episode_cards"]
     episode_elements = findGivenElements(browser, episode_element_xpath)
 
-    # # debugging block
-    # for i, ep in enumerate(episode_elements):
-    #     try:
-    #         title = ep.find_element(By.XPATH, './/h4').text.strip()
-    #         date = ep.find_element(By.XPATH, './/p[not(contains(text(), "Tracks")) and not(contains(text(), "Questions"))]').text.strip()
-    #         print(f"[{i+1}] Title: {title} | Date: {date}")
-    #     except Exception as e:
-    #         print(f"[{i+1}] Issue extracting episode info: {e}")
-    # print(input("here - episodes scraped"))
+    #print(f"🔍 Found {len(episode_elements)} episodes.")
+    # for j in range(len(episode_elements)):
+
+    #     # Re-fetch the elements after each navigation to avoid stale element exception
+    #     episode_elements = findGivenElements(browser, episode_element_xpath)
+    #     episode = episode_elements[j]
 
 
-    for j in range(len(episode_elements)):
-
-        # Re-fetch the elements after each navigation to avoid stale element exception
+    ##############################
+    num_episodes = len(findGivenElements(browser, episode_element_xpath))
+    for j in range(num_episodes):
         episode_elements = findGivenElements(browser, episode_element_xpath)
+        if j >= len(episode_elements):
+            print(f"❌ Episode index {j} out of range after re-fetch.")
+            break
+
         episode = episode_elements[j]
+
+    ###################################
 
         # Capture episode metadata BEFORE clicking
         try:
@@ -261,8 +263,8 @@ def scrape_soundtrack_tv(tv_show, season_num):
     print()
 
     # return playlist
-    return playlist
-
+    return playlist # dict
+    #return output_file # filepath
 
 # tester function call - test any amendments to Soundtrack_Scraper_tv.py
 # this will only run if this script is executed natively (ie not when imported into soundtrack_main.py)
