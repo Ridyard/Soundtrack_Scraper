@@ -48,7 +48,9 @@ def get_spotify_client():
         client_secret=client_secret,
         redirect_uri=redirect_uri,
         scope="playlist-modify-public"
-    ))
+        ),
+        requests_timeout=30
+    )
 
 
 
