@@ -4,4 +4,10 @@ Scraper: scrapes the soundtrack of a given tv-show & season_num; returns a csv p
 
 Builder: uses the scraped playlist and creates a Spotify playlist
 
+#############
+
+Temnplate folder contains index.html & preview.html; front-end web-app pages
+
+app.py to test the web-app locally
+
 A.Ridyard
