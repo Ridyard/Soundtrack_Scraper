@@ -23,6 +23,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import pandas as pd
 from pathlib import Path
+import os
 
 def handleCookies(browser, selectors):
     # Called when navigating to new browser instance or web page; clear the "cookies" pop-up
@@ -172,6 +173,7 @@ def scrape_soundtrack_tv(tv_show, season_num):
 
         print(f"Navigating to episode: {episode_title} ({episode_date})")
 
+        # used in displaying the current episode on index.html when scraping
         with open("current_episode.txt", "w", encoding="utf-8") as f:
             f.write(episode_title)
         
@@ -265,9 +267,12 @@ def scrape_soundtrack_tv(tv_show, season_num):
     print(f"playlist length: {len(playlist)}")
     print()
 
-    # return playlist
+    # clean up & delete "current_episode.txt" once we're finished with it 
+    if os.path.exists("current_episode.txt"):
+        os.remove("current_episode.txt")
+    
     return playlist # dict
-    #return output_file # filepath
+    
 
 # tester function call - test any amendments to Soundtrack_Scraper_tv.py
 # this will only run if this script is executed natively (ie not when imported into soundtrack_main.py)
