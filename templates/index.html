@@ -161,6 +161,39 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* floating suggestions */
+    #suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background-color: rgba(0, 0, 0, 0.85);
+        border-radius: 6px;
+        padding: 0.5rem 0;
+        margin: 0;
+        list-style: none;
+        opacity: 0;
+        transform: translateY(5px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #suggestions.show {
+        opacity: 1;
+        transform: translateY(0);
+        }
+
+        #suggestions li {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        color: white;
+        }
+
+        #suggestions li:hover,
+        #suggestions li.active {
+        background-color: #00b894;
+    }
+
 
   </style>
 </head>
@@ -175,15 +208,28 @@
     </div>
     {% endif %}
 
-    <form method="POST">
-      <label for="tv_show">TV Show</label>
-      <input type="text" name="tv_show" id="tv_show" placeholder="Game of Thrones" required />
-
-      <label for="season_num">Season Number</label>
-      <input type="number" name="season_num" id="season_num" min="1" placeholder="3" required />
-
-      <button type="submit">Create Playlist</button>
+    <form method="POST" action="{{ url_for('film_search') }}">
+        <label for="media_type">Media Type</label>
+        <select name="media_type" id="media_type" required onchange="updatePlaceholder()">
+          <option value="tv">TV Show</option>
+          <option value="film">Film</option>
+        </select>
+        <input type="hidden" name="media_source" id="media_source" value="tv">
+      
+        <label for="tv_show">Title</label>
+        <div class="autocomplete-wrapper" style="position: relative;">
+          <input type="text" name="tv_show" id="tv_show" placeholder="Game of Thrones" required autocomplete="off" />
+          <ul id="suggestions" role="listbox"></ul>
+        </div>
+      
+        <div id="season-wrapper">
+            <label for="season_num">Season Number</label>
+            <input type="number" name="season_num" id="season_num" min="1" placeholder="3" required />
+        </div>
+          
+        <button type="submit">Create Playlist</button>
     </form>
+
 
     <div id="spinner" class="spinner" style="display: none;">
       <div class="loader"></div>
@@ -218,10 +264,140 @@
     }
   
     form.addEventListener("submit", () => {
+      const mediaType = document.getElementById("media_type").value;
+      // Dynamically set form action
+      form.action = mediaType === "tv" ? "/" : "/film";
+      // Update hidden input for tracking/debugging
+      document.getElementById("media_source").value = mediaType;
+
       form.style.display = "none";
       spinner.style.display = "block";
       setInterval(pollEpisode, 1500); // poll every 1.5s
     });
   </script>
+
+    
+    <script>
+        const input = document.getElementById("tv_show");
+        const mediaTypeSelect = document.getElementById("media_type");
+        const suggestions = document.getElementById("suggestions");
+        let debounceTimer;
+        let activeIndex = -1;
+        
+        function updatePlaceholder() {
+            const type = mediaTypeSelect.value;
+            input.placeholder = type === "tv" ? "Search for a TV show..." : "Search for a film...";
+
+            const seasonWrapper = document.getElementById("season-wrapper");
+            if (type === "film") {
+                seasonWrapper.style.display = "none";
+                document.getElementById("season_num").removeAttribute("required");
+            } else {
+                seasonWrapper.style.display = "block";
+                document.getElementById("season_num").setAttribute("required", "required");
+            }
+
+            suggestions.innerHTML = "";
+        }
+        
+        input.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            const query = input.value.trim();
+            if (query.length < 2) {
+                suggestions.innerHTML = "";
+                suggestions.classList.remove("show"); 
+                return;
+            }
+
+            debounceTimer = setTimeout(() => fetchSuggestions(query), 300);
+            });
+        
+        function fetchSuggestions(query) {
+            const mediaType = mediaTypeSelect.value;
+            fetch(`/search?q=${encodeURIComponent(query)}&type=${mediaType}`)
+            .then(res => res.json())
+            .then(data => renderSuggestions(data.results || []));
+        }
+        
+        // function renderSuggestions(movies) {
+        //     const limited = movies.slice(0, 3);
+        //     suggestions.innerHTML = limited.map((movie, i) => `
+        //         <li role="option" tabindex="-1" data-index="${i}" style="padding: 0.5rem; cursor: pointer; background-color: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 0.3rem;">
+        //         ${movie.title} (${movie.release_date?.slice(0, 4) || "Unknown"})
+        //         </li>
+        //     `).join("");
+
+        //     if (limited.length > 0) {
+        //         suggestions.classList.add("show");
+        //     } else {
+        //         suggestions.classList.remove("show");
+        //     }
+
+        //     activeIndex = -1;
+        //     }
+        
+
+        function renderSuggestions(movies) {
+          const limited = movies.slice(0, 3);
+          const mediaType = mediaTypeSelect.value;
+
+          suggestions.innerHTML = limited.map((item, i) => {
+            const title = mediaType === "tv" ? item.name : item.title;
+            const year = mediaType === "tv"
+              ? item.first_air_date?.slice(0, 4)
+              : item.release_date?.slice(0, 4);
+
+            const displayText = year && mediaType === "film" ? `${title} (${year})` : title;
+
+            return `
+              <li role="option" tabindex="-1" data-index="${i}" data-title="${title}">
+                ${displayText}
+              </li>
+            `;
+          }).join("");
+
+          if (limited.length > 0) {
+            suggestions.classList.add("show");
+          } else {
+            suggestions.classList.remove("show");
+          }
+
+          activeIndex = -1;
+        }
+
+        
+        input.addEventListener("keydown", e => {
+          const items = suggestions.querySelectorAll("li");
+          if (e.key === "ArrowDown") {
+            activeIndex = (activeIndex + 1) % items.length;
+            updateActive(items);
+          } else if (e.key === "ArrowUp") {
+            activeIndex = (activeIndex - 1 + items.length) % items.length;
+            updateActive(items);
+          } else if (e.key === "Enter" && activeIndex >= 0) {
+            e.preventDefault();
+            const selected = items[activeIndex]; 
+            input.value = selected.getAttribute("data-title").trim(); 
+            suggestions.innerHTML = "";
+            suggestions.classList.remove("show");
+          }
+        });
+        
+        function updateActive(items) {
+            items.forEach(item => item.style.backgroundColor = "rgba(255,255,255,0.05)");
+            if (items[activeIndex]) items[activeIndex].style.backgroundColor = "#00b894";
+        }
+        
+        suggestions.addEventListener("click", e => {
+          const li = e.target.closest("li");
+          if (li) {
+            input.value = li.getAttribute("data-title").trim(); // ✅ This is the line you're asking about
+            suggestions.innerHTML = "";
+            suggestions.classList.remove("show");
+          }
+        });
+
+        updatePlaceholder(); // Run once on page load
+    </script>
 </body>
 </html>

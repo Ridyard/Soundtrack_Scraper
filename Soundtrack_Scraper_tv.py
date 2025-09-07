@@ -2,13 +2,7 @@
 
 # py script to scrape the soundtrack from a given tv show
 # Tracks are pulled from each episode, ordered by season
-# A Ridyard // 09.2024 // initial build
-#           // 08.2025 // updated xpaths; all previous xpaths were deprecated
-#                      // updated method for scraping song/artists
-#                      // updated the method for handling multiple contributing artists on a single song
-#                      // added conditional block for native script testing
-#                      // updated episode_elements section; handles stale DOM / episode element references
-
+# A Ridyard 
 
 # TODO
 # check if opening credits song is in playlist - and if not - add it

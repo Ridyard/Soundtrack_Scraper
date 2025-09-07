@@ -146,7 +146,11 @@
 </head>
 <body>
   <div class="container">
-    <h2>🎧 Preview Playlist for {{ tv_show.title() }} Season {{ season_num }}</h2>
+    <h2>🎧 Preview Playlist for {{ tv_show|title }} 
+      {% if season_num %}
+        Season {{ season_num }}
+      {% endif %}
+    </h2>
     <p class="track-count">Total tracks: {{ playlist|length }}</p>
     <div class="playlist-scroll">
       <table>
@@ -162,7 +166,7 @@
       <button type="submit">Create Playlist</button>
     </form>
     <div style="text-align: center; margin-top: 1rem;">
-      <a href="/" <a href="/" class="cancel-link">Cancel</a>
+      <a href="/" class="cancel-link">Back to Search</a>
     </div>
     <div id="spinner" class="spinner" style="display: none;">
       <div class="loader"></div>
