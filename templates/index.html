@@ -270,6 +270,39 @@
       background-color: rgba(255, 255, 255, 0.2);
     }
 
+    #suggestions li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem;
+      cursor: pointer;
+    }
+
+    #suggestions li:hover {
+      background-color: rgba(255,255,255,0.05);
+    }
+
+    .suggestion-poster {
+      width: 40px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .suggestion-placeholder {
+      width: 40px;
+      height: 60px;
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .suggestion-text {
+      font-size: 0.95rem;
+      line-height: 1.2;
+    }
+
   </style>
 </head>
 
@@ -465,21 +498,48 @@
         .then(data => renderSuggestions(data.results || []));
     }
 
-    // Render suggestions
-    function renderSuggestions(movies) {
-      const limited = movies.slice(0, 3);
+    // // Render suggestions
+    // function renderSuggestions(movies) {
+    //   const limited = movies.slice(0, 3);
+    //   const mediaType = document.querySelector('input[name="media_type"]:checked').value;
+
+    //   suggestions.innerHTML = limited.map((item, i) => {
+    //     const title = mediaType === "tv" ? item.name : item.title;
+    //     const year = mediaType === "tv"
+    //       ? item.first_air_date?.slice(0, 4)
+    //       : item.release_date?.slice(0, 4);
+    //     const displayText = year && mediaType === "film" ? `${title} (${year})` : title;
+
+    //     return `
+    //       <li role="option" tabindex="-1" data-index="${i}" data-title="${title}">
+    //         ${displayText}
+    //       </li>
+    //     `;
+    //   }).join("");
+
+    //   if (limited.length > 0) {
+    //     suggestions.classList.add("show");
+    //   } else {
+    //     suggestions.classList.remove("show");
+    //   }
+
+    //   activeIndex = -1;
+    // }
+    function renderSuggestions(items) {
+      const limited = items.slice(0, 5); // already limited in backend, but safe
       const mediaType = document.querySelector('input[name="media_type"]:checked').value;
 
       suggestions.innerHTML = limited.map((item, i) => {
         const title = mediaType === "tv" ? item.name : item.title;
-        const year = mediaType === "tv"
-          ? item.first_air_date?.slice(0, 4)
-          : item.release_date?.slice(0, 4);
-        const displayText = year && mediaType === "film" ? `${title} (${year})` : title;
+        const year = item.year ? ` (${item.year})` : "";
+        const poster = item.poster_url
+          ? `<img src="${item.poster_url}" alt="${title} poster" class="suggestion-poster" loading="lazy">`
+          : `<div class="suggestion-placeholder"></div>`;
 
         return `
           <li role="option" tabindex="-1" data-index="${i}" data-title="${title}">
-            ${displayText}
+            ${poster}
+            <span class="suggestion-text">${title}${year}</span>
           </li>
         `;
       }).join("");
@@ -492,6 +552,31 @@
 
       activeIndex = -1;
     }
+
+    // Hide suggestions when clicking away from the input
+    input.addEventListener("blur", () => {
+      // Small delay so a click on a suggestion still registers before hiding
+      setTimeout(() => {
+        suggestions.innerHTML = "";
+        suggestions.classList.remove("show");
+      }, 150);
+    });
+
+    document.addEventListener("click", e => {
+      if (!suggestions.contains(e.target) && e.target !== input) {
+        suggestions.innerHTML = "";
+        suggestions.classList.remove("show");
+      }
+    });
+
+    // Hide suggestions when pressing Escape
+    input.addEventListener("keydown", e => {
+      if (e.key === "Escape") {
+        suggestions.innerHTML = "";
+        suggestions.classList.remove("show");
+        input.blur(); // optional: also remove focus from the input
+      }
+    });
 
     // Keyboard navigation for suggestions
     input.addEventListener("keydown", e => {

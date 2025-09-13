@@ -54,6 +54,23 @@ def confirm():
 
 
 
+# @app.route("/search")
+# def autocomplete_search():
+#     query = request.args.get("q")
+#     media_type = request.args.get("type", "tv")
+
+#     endpoint = "tv" if media_type == "tv" else "movie"
+#     url = f"https://api.themoviedb.org/3/search/{endpoint}"
+
+#     params = {
+#         "api_key": TMDB_API_KEY,
+#         "query": query,
+#         "language": "en-US",
+#         "include_adult": False
+#     }
+
+#     response = requests.get(url, params=params)
+#     return jsonify(response.json())
 @app.route("/search")
 def autocomplete_search():
     query = request.args.get("q")
@@ -69,8 +86,31 @@ def autocomplete_search():
         "include_adult": False
     }
 
-    response = requests.get(url, params=params)
-    return jsonify(response.json())
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()  # raises HTTPError for 4xx/5xx
+        data = response.json()
+    except requests.RequestException as e:
+        app.logger.error(f"TMDB API request failed: {e}")
+        return jsonify([])  # return empty list on error
+    except ValueError as e:
+        app.logger.error(f"TMDB JSON decode failed: {e}")
+        return jsonify([])
+
+    results = data.get("results", [])[:3]  # limit to 3 results
+
+    for r in results:
+        # Add year field for display
+        if media_type == "tv":
+            r["year"] = r.get("first_air_date", "")[:4] if r.get("first_air_date") else ""
+        else:
+            r["year"] = r.get("release_date", "")[:4] if r.get("release_date") else ""
+
+        # Only add poster_url if TMDB returned one
+        if r.get("poster_path"):
+            r["poster_url"] = f"https://image.tmdb.org/t/p/w500{r['poster_path']}"
+        
+    return jsonify({"results": results})
 
 
 @app.route("/film", methods=["GET", "POST"])
@@ -96,7 +136,7 @@ def film_search():
         playlist = []
         for item in raw_results:
             title = item.get("title") or item.get("name")
-            year = item.get("release_date", "")[:4] if media_type == "film" else ""
+            year = item.get("release_date", "")[:4] if media_type == "movie" else ""
             playlist.append({"title": title, "year": year})
 
         return render_template(
