@@ -136,6 +136,10 @@
         }
     }
 
+    .error-toast {
+      background-color: #d63031; /* red */
+    }
+
     .spinner {
       text-align: center;
       margin-top: 1.5rem;
@@ -324,6 +328,15 @@
         {% endif %}
       </span>
       <br><br>
+      <span class="toast-dismiss" onclick="dismissToast()">Dismiss</span>
+    </div>
+    {% endif %}
+
+    <!-- if no soundtrack info; display toast pop-up-->
+    {% if error_message %}
+    <div id="toast" class="toast error-toast" role="alert">
+      <span class="toast-message">⚠️ {{ error_message }}</span>
+      <br>
       <span class="toast-dismiss" onclick="dismissToast()">Dismiss</span>
     </div>
     {% endif %}

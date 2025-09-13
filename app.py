@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from Soundtrack_Scraper_tv import scrape_soundtrack_tv
 from Soundtrack_Builder import run_soundtrack_builder
 from Soundtrack_Main import build_playlist
+from selenium.common.exceptions import TimeoutException
 
 app = Flask(__name__)
 playlist_cache = {}  # temporary in-memory store
@@ -15,23 +16,52 @@ load_dotenv()  # Loads from .env file
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
-# used when the user selects "tv show"
+# used when the user selects "tv show
 @app.route("/", methods=["GET", "POST"])
-def tv_builder(): #previously index()
+def tv_builder():
     success = request.args.get("success")
     track_count = request.args.get("tracks", default=0, type=int)
     playlist_url = request.args.get("playlist_url")
+    error_message = request.args.get("error") 
 
     if request.method == "POST":
         tv_show = request.form["tv_show"]
         season_num = int(request.form["season_num"])
-        playlist = scrape_soundtrack_tv(tv_show, season_num)
+
+        try:
+            playlist = scrape_soundtrack_tv(tv_show, season_num)
+        except TimeoutException:
+            # No soundtrack found or page element missing
+            return redirect(url_for(
+                "tv_builder",
+                error=f"No soundtrack found for {tv_show} season {season_num}"
+            ))
+        except Exception as e:
+            # Catch-all for unexpected errors
+            app.logger.error(f"Unexpected error scraping {tv_show}: {e}")
+            return redirect(url_for(
+                "tv_builder",
+                error="An unexpected error occurred while scraping the soundtrack."
+            ))
+
         playlist_cache["data"] = playlist
         playlist_cache["tv_show"] = tv_show
         playlist_cache["season_num"] = season_num
-        #print('scraped playlist: ',playlist)
-        return render_template("preview.html", playlist=playlist, tv_show=tv_show, season_num=season_num)
-    return render_template("index.html", success=success, track_count=track_count, playlist_url=playlist_url)
+
+        return render_template(
+            "preview.html",
+            playlist=playlist,
+            tv_show=tv_show,
+            season_num=season_num
+        )
+
+    return render_template(
+        "index.html",
+        success=success,
+        track_count=track_count,
+        playlist_url=playlist_url,
+        error_message=error_message
+    )
 
 
 @app.route("/current-episode")
