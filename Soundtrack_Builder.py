@@ -29,8 +29,14 @@ from dotenv import load_dotenv
 
 
 def run_soundtrack_builder(tv_show, season_num, csv_dir="Playlist CSV Files", log_missing=True):
+    """
+    Build a Spotify playlist from a CSV and return the playlist URL.
+    Works both when imported (web-app) and when run standalone (__main__).
+    """
     sp = get_spotify_client()
-    create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
+    playlist_url = create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
+    return playlist_url
+    # create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
 
 
 
@@ -104,7 +110,11 @@ def create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir="Playlist 
     for i in range(0, len(track_uris), 100):
         sp.playlist_add_items(playlist_id=playlist["id"], items=track_uris[i:i+100])
 
+    playlist_url = playlist['external_urls']['spotify']
     print(f"✅ Playlist created: {playlist['external_urls']['spotify']}")
+    print(playlist_url)
+
+    return playlist_url
 
 
 # tester code block

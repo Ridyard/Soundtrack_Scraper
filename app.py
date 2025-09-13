@@ -6,6 +6,7 @@ import requests, os
 from dotenv import load_dotenv
 from Soundtrack_Scraper_tv import scrape_soundtrack_tv
 from Soundtrack_Builder import run_soundtrack_builder
+from Soundtrack_Main import build_playlist
 
 app = Flask(__name__)
 playlist_cache = {}  # temporary in-memory store
@@ -19,6 +20,8 @@ TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 def tv_builder(): #previously index()
     success = request.args.get("success")
     track_count = request.args.get("tracks", default=0, type=int)
+    playlist_url = request.args.get("playlist_url")
+
     if request.method == "POST":
         tv_show = request.form["tv_show"]
         season_num = int(request.form["season_num"])
@@ -28,7 +31,7 @@ def tv_builder(): #previously index()
         playlist_cache["season_num"] = season_num
         #print('scraped playlist: ',playlist)
         return render_template("preview.html", playlist=playlist, tv_show=tv_show, season_num=season_num)
-    return render_template("index.html", success=success, track_count=track_count)
+    return render_template("index.html", success=success, track_count=track_count, playlist_url=playlist_url)
 
 
 @app.route("/current-episode")
@@ -45,8 +48,9 @@ def current_episode():
 def confirm():
     tv_show = playlist_cache.get("tv_show")
     season_num = playlist_cache.get("season_num")
-    run_soundtrack_builder(tv_show, season_num)
-    return redirect(url_for("tv_builder", success="true", tracks=len(playlist_cache["data"])))
+    playlist_url = build_playlist(tv_show, season_num)
+    # run_soundtrack_builder(tv_show, season_num)
+    return redirect(url_for("tv_builder", success="true", tracks=len(playlist_cache["data"]), playlist_url=playlist_url))
 
 
 
