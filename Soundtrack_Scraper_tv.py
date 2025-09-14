@@ -4,10 +4,6 @@
 # Tracks are pulled from each episode, ordered by season
 # A Ridyard 
 
-# TODO
-# check if opening credits song is in playlist - and if not - add it
-# Add film functionality - 
-
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -73,9 +69,9 @@ def scrape_soundtrack_tv(tv_show, season_num):
         "season_links": '//a[contains(@href, "/show/") and contains(@href, "/season-")]',
         "episode_cards": '//a[contains(@class, "card-border") and @data-discover="true"]',
         "login_modal": '//div[contains(@class, "modal")]//h1[contains(text(), "Log in")]',
-        "episode_div": '//div[contains(@class, "scroll-mt-20")]',
+        "episode_div": '//div[contains(@class, "scroll-mt-20")]', # holds various track containers
         "show_all_button": './/button[.//p[text()="Show all tracks"]]',
-        "track_container": './/div[contains(@class, "flex flex-col")]',
+        "track_container": './/div[contains(@class, "flex flex-col")]',  # song/artist container (within the parent episode_div) 
         "song": './/p[contains(@class, "font-bold") and contains(@class, "text-[1rem]")]',
         "artist": './/a[@data-discover="true" and contains(@href, "/artist/")]/small'
     }
@@ -229,7 +225,7 @@ def scrape_soundtrack_tv(tv_show, season_num):
 
 
 
-    # placeholder for the csv filename, in a standardissed format
+    # placeholder for the csv filename, in a standardised format
     words = tvShowClean.split('-')
     output_filename = '_'.join(word.capitalize() for word in words) # eg will output as "Game_Of_Thrones"
 
