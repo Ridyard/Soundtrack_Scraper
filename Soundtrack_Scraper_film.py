@@ -10,7 +10,7 @@ from pathlib import Path
 import os
 import Soundtrack_Scraper_utils
 
-def scrape_soundtrack_film(film_name, film_year):
+def scrape_soundtrack_film(film_name, film_year=""):
     
     playlist = {}  # dict to hold each artist:song kv pair
     selectors = { # dict to hold the xpath strings 
@@ -30,7 +30,11 @@ def scrape_soundtrack_film(film_name, film_year):
     baseURL = "https://www.tunefind.com/movie/"
     film_name = film_name.split()
     film_name_clean = '-'.join(film_name)
-    builtURL = baseURL + film_name_clean + '-' + film_year
+    # some films omit the release year in the url (example: the hangover)
+    if film_year != "":
+        builtURL = baseURL + film_name_clean + '-' + film_year
+    else:
+        builtURL = baseURL + film_name_clean
     
     # set browser object & open url
     browser = webdriver.Firefox(options = options) # Use options when initializing the WebDriver
@@ -66,8 +70,10 @@ def scrape_soundtrack_film(film_name, film_year):
     # placeholder filename
     words = film_name_clean.split("-")
     output_filename = '_'.join(word.capitalize() for word in words)
-    if film_year:
-        output_filename += f"_{film_year}.csv"
+    if film_year != "":
+        output_filename += f"_{film_year}_Playlist.csv"
+    else:
+        output_filename += f"_Playlist.csv" 
 
     # using Path, create a dir to hold playlist csv files in the cwd
     # create dir if it doesn't exist; it won't crash if dir already exists

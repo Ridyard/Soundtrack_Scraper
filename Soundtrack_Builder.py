@@ -30,13 +30,24 @@ from dotenv import load_dotenv
 
 def run_soundtrack_builder(tv_show, season_num, csv_dir="Playlist CSV Files", log_missing=True):
     """
-    Build a Spotify playlist from a CSV and return the playlist URL.
+    TV Series - Build a Spotify playlist from a CSV and return the playlist URL.
     Works both when imported (web-app) and when run standalone (__main__).
     """
     sp = get_spotify_client()
     playlist_url = create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
     return playlist_url
     # create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir, log_missing)
+
+
+def run_soundtrack_builder_film(film_name, film_year="", csv_dir="Playlist CSV Files", log_missing=True):
+    """
+    Films - Build a Spotify playlist from a CSV and return the playlist URL.
+    Works both when imported (web-app) and when run standalone (__main__).
+    """
+    sp = get_spotify_client()
+    playlist_url = create_spotify_playlist_from_csv(sp, film_name, film_year, csv_dir, log_missing)
+    return playlist_url
+    
 
 
 
@@ -117,15 +128,84 @@ def create_spotify_playlist_from_csv(sp, tv_show, season_num, csv_dir="Playlist 
     return playlist_url
 
 
+def create_spotify_playlist_from_csv_film(sp, film_name, film_year, csv_dir="Playlist CSV Files", log_missing=True):
+    """
+    Creates a Spotify playlist from a CSV of Song/Artist pairs.
+    Deduplicates tracks, preserves order, and logs missing entries.
+    """
+    
+    film_name = '_'.join(word.capitalize() for word in film_name.split())
+    if film_year != "":
+        file_name = f'{film_name}_{film_year}_Playlist.csv'
+    else:
+        file_name = f'{film_name}_Playlist.csv'
+    csv_path = f"{csv_dir}/{file_name}"
+    
+    # check that the playlist exists
+    if not Path(csv_path).exists():
+        print(f"❌ CSV not found: {csv_path}")
+        return
+
+    df = pd.read_csv(csv_path)
+
+    track_uris = []
+    missing_tracks = []
+
+    for _, row in df.iterrows():
+        query = f"{row['Song']} {row['Artist']}"
+        results = sp.search(q=query, type="track", limit=1)
+        tracks = results.get('tracks', {}).get('items', [])
+        if tracks:
+            track_uris.append(tracks[0]['uri'])
+        else:
+            print(f"❌ Not found: {query}")
+            missing_tracks.append(query)
+
+    # Deduplicate while preserving order
+    track_uris = list(OrderedDict.fromkeys(track_uris))
+
+    # Log missing tracks
+    if log_missing and missing_tracks:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        log_path = f"{csv_path}_missing_tracks_log_{timestamp}.txt"
+        with open(log_path, "w", encoding="utf-8") as f:
+            for track in missing_tracks:
+                f.write(track + "\n")
+        print(f"📝 Missing tracks logged to: {log_path}")
+
+    # Create playlist and add tracks
+    film_name_clean = film_name.replace('_', ' ')
+
+    user_id = sp.current_user()["id"]
+    playlist = sp.user_playlist_create(user=user_id, name=f"{film_name_clean} {film_year}", public=True)
+
+    for i in range(0, len(track_uris), 100):
+        sp.playlist_add_items(playlist_id=playlist["id"], items=track_uris[i:i+100])
+
+    playlist_url = playlist['external_urls']['spotify']
+    print(f"✅ Playlist created: {playlist['external_urls']['spotify']}")
+    print(playlist_url)
+
+    return playlist_url
+
+
+
+
 # tester code block
 # when testing soundtrack_builder.py (ie calling functions from within this script, rather than importing from soundtrack_main.py)
 # this code only runs when executed directly; it won't trigger when this file is imported elsewhere
 # this call requires there to be a "tv_show_Season_1_Playlist.txt" file in the "Playlist CSV Files" sub-directory
 if __name__ == "__main__":
-    # tv_show = '_'.join(word.capitalize() for word in input("Enter a TV show to test script: ").split())
-    tv_show = input("enter a tv show to test script: ")
-    season_num = input("enter season num: ")
-    sp = get_spotify_client()
-    create_spotify_playlist_from_csv(sp, tv_show, season_num)
-
+    option = input("enter A for tv\nenter B for film\n")
+    if option == "A" or option =="a":
+        # tv_show = '_'.join(word.capitalize() for word in input("Enter a TV show to test script: ").split())
+        tv_show = input("enter a tv show to test script: ")
+        season_num = input("enter season num: ")
+        sp = get_spotify_client()
+        create_spotify_playlist_from_csv(sp, tv_show, season_num)
+    elif option == "B" or option == "b":
+        film_name = input("enter a film to test script: ")
+        film_year = input("enter the year of release: ")
+        sp = get_spotify_client()
+        create_spotify_playlist_from_csv_film(sp, film_name, film_year)
 
